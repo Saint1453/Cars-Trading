@@ -1,0 +1,121 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
+
+-- Remote Event yolu (önceki testlerden doğrulanan yol)
+local CoinMarketRE = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Coin"):WaitForChild("CoinMarketRE")
+
+-- Eğer daha önce açıldıysa eski GUI'yi temizle
+if CoreGui:FindFirstChild("AutoBuyGUI") then
+    CoreGui.AutoBuyGUI:Destroy()
+end
+
+-- Ana Ekran Çerçevesi (GUI)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AutoBuyGUI"
+ScreenGui.Parent = CoreGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 220, 0, 160)
+MainFrame.Position = UDim2.new(0.5, -110, 0.4, -80)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true -- Ekran üzerinde taşınabilir
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = MainFrame
+
+-- Başlık Yazısı
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -40, 0, 30)
+Title.Position = UDim2.new(0, 10, 0, 5)
+Title.BackgroundTransparency = 1
+Title.Text = "Auto Buy Paneli"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 15
+Title.Font = Enum.Font.SourceSansBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = MainFrame
+
+-- Kapatma (X) Tuşu
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseBtn.Position = UDim2.new(1, -33, 0, 6)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Parent = MainFrame
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseBtn
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Item ID Giriş Kutusu (ID Kutusu)
+local IdBox = Instance.new("TextBox")
+IdBox.Size = UDim2.new(1, -20, 0, 35)
+IdBox.Position = UDim2.new(0, 10, 0, 45)
+IdBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+IdBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+IdBox.PlaceholderText = "Item ID Gir (Örn: 10001)"
+IdBox.Text = "10001"
+IdBox.TextSize = 14
+IdBox.Font = Enum.Font.SourceSans
+IdBox.Parent = MainFrame
+
+local IdCorner = Instance.new("UICorner")
+IdCorner.CornerRadius = UDim.new(0, 6)
+IdCorner.Parent = IdBox
+
+-- Açma / Kapama (Off / On) Tuşu
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(1, -20, 0, 40)
+ToggleBtn.Position = UDim2.new(0, 10, 0, 95)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50) -- Kapalıyken Kırmızı
+ToggleBtn.Text = "AUTO BUY: OFF"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.TextSize = 15
+ToggleBtn.Font = Enum.Font.SourceSansBold
+ToggleBtn.Parent = MainFrame
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 6)
+ToggleCorner.Parent = ToggleBtn
+
+-- Auto Buy Durum Kontrolü
+local autoBuyActive = false
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    autoBuyActive = not autoBuyActive
+    if autoBuyActive then
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50) -- Açıkken Yeşil
+        ToggleBtn.Text = "AUTO BUY: ON"
+    else
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+        ToggleBtn.Text = "AUTO BUY: OFF"
+    end
+end)
+
+-- Arka Planda Çalışan Satın Alma Döngüsü
+task.spawn(function()
+    while true do
+        if autoBuyActive then
+            local id = tonumber(IdBox.Text)
+            if id then
+                pcall(function()
+                    CoinMarketRE:FireServer("purchase", id, 1)
+                end)
+            end
+        end
+        task.wait(0.15) -- İstek gönderme hızı (0.15 saniye)
+    end
+end)
+
+print("=== Auto Buy Arayüzü Başarıyla Yüklendi! ===")
