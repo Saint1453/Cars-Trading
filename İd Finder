@@ -1,0 +1,65 @@
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local player = Players.LocalPlayer
+
+local lastNotifiedItem = nil
+
+-- Elindeki eşyayı kontrol eden ve Roblox bildirimi gönderen döngü
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        local char = player.Character
+        if char then
+            local foundItem = nil
+            
+            -- Karakterin elinde Tool var mı kontrol et
+            for _, child in ipairs(char:GetChildren()) do
+                if child:IsA("Tool") then
+                    foundItem = child
+                    break
+                end
+            end
+            
+            if foundItem then
+                -- Eğer eldeki eşya az önceki eşyadan farklıysa bildirim gönder
+                if foundItem ~= lastNotifiedItem then
+                    lastNotifiedItem = foundItem
+                    
+                    local infoText = "Ad: " .. foundItem.Name
+                    
+                    -- Texture kontrolü
+                    if foundItem.TextureId ~= "" then
+                        infoText = infoText .. "\nTexture: " .. foundItem.TextureId
+                    end
+                    
+                    -- Mesh kontrolü
+                    local handle = foundItem:FindFirstChild("Handle")
+                    if handle then
+                        if handle:IsA("MeshPart") and handle.MeshId ~= "" then
+                            infoText = infoText .. "\nMeshId: " .. handle.MeshId
+                        else
+                            local mesh = handle:FindFirstChildOfClass("SpecialMesh")
+                            if mesh and mesh.MeshId ~= "" then
+                                infoText = infoText .. "\nMeshId: " .. mesh.MeshId
+                            end
+                        end
+                    end
+                    
+                    -- Roblox'un kendi native bildirim sistemi (SetCore)
+                    pcall(function()
+                        StarterGui:SetCore("SendNotification", {
+                            Title = "ItemIDFinder",
+                            Text = infoText,
+                            Duration = 6, -- Bildirimin ekranda kalma süresi (saniye)
+                        })
+                    end)
+                    
+                    print("[Delta ID Finder] " .. infoText)
+                end
+            else
+                -- Elden eşya bırakıldığında hafızayı sıfırla
+                lastNotifiedItem = nil
+            end
+        end
+    end
+end)
