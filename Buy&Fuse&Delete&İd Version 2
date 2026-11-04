@@ -1,0 +1,518 @@
+--[[
+    Project: Roblox Universal Automation - All-in-One Neon Panel (v3.0 - Modular & Secure)
+    Author: Refactored by Gemini & Saint1453
+    Executor: Delta (Mobile/PC)
+--]]
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local StarterGui = game:GetService("StarterGui")
+local UserInputService = game:GetService("UserInputService")
+
+-- ==================== 1. THEME (TEMA & STİL) ====================
+local Theme = {
+    AccentNeon = Color3.fromRGB(0, 229, 255),
+    AccentOrange = Color3.fromRGB(255, 170, 0),
+    BackgroundMain = Color3.fromRGB(18, 18, 25),
+    BackgroundTop = Color3.fromRGB(25, 25, 35),
+    BackgroundCard = Color3.fromRGB(25, 25, 35),
+    BorderColor = Color3.fromRGB(45, 45, 65),
+    InputBackground = Color3.fromRGB(40, 40, 55),
+    ButtonDefault = Color3.fromRGB(180, 50, 50),
+    ButtonActive = Color3.fromRGB(50, 180, 80),
+    TextWhite = Color3.fromRGB(255, 255, 255),
+    TextDim = Color3.fromRGB(180, 180, 180),
+    FontBold = Enum.Font.GothamBold,
+    FontRegular = Enum.Font.Gotham,
+    CornerRadius = 8,
+    ElementHeight = 32,
+}
+
+-- ==================== 2. MAID CLASS (TEMİZLİK YÖNETİCİSİ) ====================
+local Maid = {}
+Maid.__index = Maid
+
+function Maid.new()
+    return setmetatable({ _tasks = {} }, Maid)
+end
+
+function Maid:GiveTask(task)
+    table.insert(self._tasks, task)
+    return task
+end
+
+function Maid:DoCleaning()
+    for _, task in ipairs(self._tasks) do
+        local t = typeof(task)
+        if t == "RBXScriptConnection" then
+            task:Disconnect()
+        elseif t == "Instance" then
+            task:Destroy()
+        elseif t == "function" then
+            pcall(task)
+        end
+    end
+    self._tasks = {}
+end
+
+local AppMaid = Maid.new()
+
+-- Eski GUI kalıntılarını temizle
+if getgenv().MasterHubUI then
+    pcall(function() getgenv().MasterHubUI:Destroy() end)
+end
+
+-- ==================== 3. STATE (DURUM YÖNETİMİ) ====================
+local State = {
+    ItemIDFinderActive = false,
+    AutoFuseActive = false,
+    AutoBuyActive = false,
+    PhysicsGlitched = false,
+    FuseId = "10001",
+    FuseAmount = "3",
+    FuseDelay = "0.5",
+    BuyId = "10001",
+    BuyDelay = "0.5",
+}
+
+-- ==================== 4. REMOTES (SUNUCU İLETİŞİMİ) ====================
+local Remotes = {}
+local Functions = ReplicatedStorage:WaitForChild("Functions", 5)
+Remotes.FuseRF = Functions and Functions:WaitForChild("Fuse", 5):WaitForChild("FuseRF", 5)
+
+pcall(function()
+    Remotes.CoinMarketRE = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Coin"):WaitForChild("CoinMarketRE")
+end)
+
+function Remotes.SafeFuse(id, amount)
+    if not Remotes.FuseRF then return false end
+    local success, result = pcall(function()
+        return Remotes.FuseRF:InvokeServer({[id] = amount})
+    end)
+    return success and result
+end
+
+function Remotes.SafeBuy(id)
+    if not Remotes.CoinMarketRE then return false end
+    local success = pcall(function()
+        Remotes.CoinMarketRE:FireServer("purchase", id, 1)
+    end)
+    return success
+end
+
+-- ==================== 5. UI FACTORY (BİLEŞEN FABRİKASI) ====================
+local UI = {}
+
+function UI.createSection(parent, titleText, accentColor)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 0)
+    frame.AutomaticSize = Enum.AutomaticSize.Y
+    frame.BackgroundColor3 = Theme.BackgroundCard
+    frame.BorderSizePixel = 0
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, Theme.CornerRadius)
+    corner.Parent = frame
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Theme.BorderColor
+    stroke.Thickness = 1
+    stroke.Parent = frame
+    
+    local padding = Instance.new("UIPadding")
+    padding.PaddingTop = UDim.new(0, 10)
+    padding.PaddingBottom = UDim.new(0, 10)
+    padding.PaddingLeft = UDim.new(0, 10)
+    padding.PaddingRight = UDim.new(0, 10)
+    padding.Parent = frame
+    
+    local layout = Instance.new("UIListLayout")
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 8)
+    layout.Parent = frame
+    
+    if titleText then
+        local title = Instance.new("TextLabel")
+        title.Size = UDim2.new(1, 0, 0, 20)
+        title.BackgroundTransparency = 1
+        title.Text = titleText
+        title.TextColor3 = accentColor or Theme.AccentNeon
+        title.TextSize = 13
+        title.Font = Theme.FontBold
+        title.TextXAlignment = Enum.TextXAlignment.Left
+        title.LayoutOrder = 0
+        title.Parent = frame
+    end
+    
+    frame.Parent = parent
+    return frame
+end
+
+function UI.createButton(parent, text, callback, color)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, Theme.ElementHeight)
+    btn.BackgroundColor3 = color or Theme.ButtonDefault
+    btn.Text = text
+    btn.TextColor3 = Theme.TextWhite
+    btn.TextSize = 12
+    btn.Font = Theme.FontBold
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+    
+    local conn = btn.MouseButton1Click:Connect(callback)
+    AppMaid:GiveTask(conn)
+    
+    btn.Parent = parent
+    return btn
+end
+
+function UI.createToggle(parent, labelText, initialState, callback)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, Theme.ElementHeight)
+    container.BackgroundTransparency = 1
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -50, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.TextColor3 = Theme.TextDim
+    label.TextSize = 12
+    label.Font = Theme.FontRegular
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+    
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(0, 42, 0, 22)
+    toggleBtn.Position = UDim2.new(1, -42, 0.5, -11)
+    toggleBtn.Text = ""
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = toggleBtn
+    
+    local active = initialState
+    local function updateVisual()
+        toggleBtn.BackgroundColor3 = active and Theme.ButtonActive or Theme.ButtonDefault
+    end
+    updateVisual()
+    
+    local conn = toggleBtn.MouseButton1Click:Connect(function()
+        active = not active
+        updateVisual()
+        callback(active)
+    end)
+    AppMaid:GiveTask(conn)
+    
+    toggleBtn.Parent = container
+    container.Parent = parent
+    return container
+end
+
+function UI.createInput(parent, placeholder, defaultText, callback)
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(1, 0, 0, Theme.ElementHeight)
+    input.BackgroundColor3 = Theme.InputBackground
+    input.TextColor3 = Theme.TextWhite
+    input.PlaceholderText = placeholder
+    input.Text = defaultText or ""
+    input.TextSize = 12
+    input.Font = Theme.FontRegular
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = input
+    
+    local padding = Instance.new("UIPadding")
+    padding.PaddingLeft = UDim.new(0, 10)
+    padding.PaddingRight = UDim.new(0, 10)
+    padding.Parent = input
+    
+    local conn = input.FocusLost:Connect(function(enterPressed)
+        callback(input.Text, enterPressed)
+    end)
+    AppMaid:GiveTask(conn)
+    
+    input.Parent = parent
+    return input
+end
+
+-- ==================== 6. MAIN UI & DRAGGING (ANA EKRAN & SÜRÜKLEME) ====================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MasterHubUI"
+ScreenGui.ResetOnSpawn = false
+
+if syn and syn.protect_gui then
+    syn.protect_gui(ScreenGui)
+    ScreenGui.Parent = CoreGui
+elseif gethui then
+    ScreenGui.Parent = gethui()
+else
+    ScreenGui.Parent = CoreGui
+end
+getgenv().MasterHubUI = ScreenGui
+AppMaid:GiveTask(ScreenGui)
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 320, 0, 480)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -240)
+MainFrame.BackgroundColor3 = Theme.BackgroundMain
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Parent = ScreenGui
+
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, Theme.CornerRadius)
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Theme.AccentNeon
+UIStroke.Thickness = 2
+UIStroke.Parent = MainFrame
+
+-- Üst Başlık Çubuğu
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 42)
+TopBar.BackgroundColor3 = Theme.BackgroundTop
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, Theme.CornerRadius)
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -75, 1, 0)
+TitleLabel.Position = UDim2.new(0, 12, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Gemini & Saint1453 Hub"
+TitleLabel.TextColor3 = Theme.AccentNeon
+TitleLabel.TextSize = 12
+TitleLabel.Font = Theme.FontBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = TopBar
+
+-- Kapatma ve Küçültme Tuşları
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 28, 0, 28)
+CloseButton.Position = UDim2.new(1, -32, 0, 7)
+CloseButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Theme.TextWhite
+CloseButton.TextSize = 13
+CloseButton.Font = Theme.FontBold
+CloseButton.Parent = TopBar
+Instance.new("UICorner", CloseButton).CornerRadius = UDim.new(0, 6)
+
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Size = UDim2.new(0, 28, 0, 28)
+MinimizeButton.Position = UDim2.new(1, -64, 0, 7)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+MinimizeButton.Text = "-"
+MinimizeButton.TextColor3 = Theme.TextWhite
+MinimizeButton.TextSize = 15
+MinimizeButton.Font = Theme.FontBold
+MinimizeButton.Parent = TopBar
+Instance.new("UICorner", MinimizeButton).CornerRadius = UDim.new(0, 6)
+
+-- UserInputService ile PC ve Mobil Uyumlu Sürükleme
+local dragging, dragInput, dragStart, startPos
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+AppMaid:GiveTask(UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end))
+
+-- İçerik Konteyneri (ScrollingFrame + UIListLayout)
+local ContentContainer = Instance.new("ScrollingFrame")
+ContentContainer.Size = UDim2.new(1, 0, 1, -42)
+ContentContainer.Position = UDim2.new(0, 0, 0, 42)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
+ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+ContentContainer.ScrollBarThickness = 4
+ContentContainer.Parent = MainFrame
+
+local ContentLayout = Instance.new("UIListLayout")
+ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ContentLayout.Padding = UDim.new(0, 10)
+ContentLayout.Parent = ContentContainer
+
+local ContentPadding = Instance.new("UIPadding")
+ContentPadding.PaddingTop = UDim.new(0, 10)
+ContentPadding.PaddingBottom = UDim.new(0, 10)
+ContentPadding.PaddingLeft = UDim.new(0, 10)
+ContentPadding.PaddingRight = UDim.new(0, 10)
+ContentPadding.Parent = ContentContainer
+
+-- ==================== 7. SECTIONS & FEATURES (PANEL BÖLÜMLERİ) ====================
+
+-- Bölüm 1: Item ID Finder
+local FinderSection = UI.createSection(ContentContainer, "🔍 Item ID Finder & Info", Theme.AccentNeon)
+local FinderStatus = Instance.new("TextLabel")
+FinderStatus.Size = UDim2.new(1, 0, 0, 20)
+FinderStatus.BackgroundTransparency = 1
+FinderStatus.Text = "Elindeki eşyanın ID/Texture bilgilerini gösterir."
+FinderStatus.TextColor3 = Theme.TextDim
+FinderStatus.TextSize = 11
+FinderStatus.Font = Theme.FontRegular
+FinderStatus.TextXAlignment = Enum.TextXAlignment.Left
+FinderStatus.Parent = FinderSection
+
+UI.createToggle(FinderSection, "ID Finder Aktif", State.ItemIDFinderActive, function(active)
+    State.ItemIDFinderActive = active
+end)
+
+-- Bölüm 2: Auto Fuse
+local FuseSection = UI.createSection(ContentContainer, "🔥 Auto Fuse Kontrolü", Theme.AccentOrange)
+UI.createInput(FuseSection, "Item ID", State.FuseId, function(text) State.FuseId = text end)
+UI.createInput(FuseSection, "Miktar", State.FuseAmount, function(text) State.FuseAmount = text end)
+UI.createInput(FuseSection, "Süre (0.1 - 5 saniye)", State.FuseDelay, function(text) State.FuseDelay = text end)
+UI.createToggle(FuseSection, "Auto Fuse Aktif", State.AutoFuseActive, function(active)
+    State.AutoFuseActive = active
+end)
+
+-- Bölüm 3: Car Delete / Physics Clip
+local CarSection = UI.createSection(ContentContainer, "🚗 Fizik Sıkıştırma / Car Delete", Theme.AccentNeon)
+local CStatus = Instance.new("TextLabel")
+CStatus.Size = UDim2.new(1, 0, 0, 20)
+CStatus.BackgroundTransparency = 1
+CStatus.Text = "Durum: Devre Dışı"
+CStatus.TextColor3 = Theme.TextDim
+CStatus.TextSize = 11
+CStatus.Font = Enum.Font.Code
+CStatus.TextXAlignment = Enum.TextXAlignment.Left
+CStatus.Parent = CarSection
+
+UI.createButton(CarSection, "FİZİK MODU (AÇ / KAPA)", function()
+    State.PhysicsGlitched = not State.PhysicsGlitched
+    CStatus.Text = State.PhysicsGlitched and "Durum: Aktif (Nesneler İtiliyor)" or "Durum: Devre Dışı"
+end, Color3.fromRGB(180, 100, 0))
+
+-- Bölüm 4: Auto Buy
+local BuySection = UI.createSection(ContentContainer, "🛒 Auto Buy Pazarı", Color3.fromRGB(170, 0, 255))
+UI.createInput(BuySection, "Satın Alınacak Item ID", State.BuyId, function(text) State.BuyId = text end)
+UI.createInput(BuySection, "Süre (0.1 - 5 saniye)", State.BuyDelay, function(text) State.BuyDelay = text end)
+UI.createToggle(BuySection, "Auto Buy Aktif", State.AutoBuyActive, function(active)
+    State.AutoBuyActive = active
+end)
+
+-- ==================== 8. EVENT LOOPS (DÖNGÜLER & GÖREVLER) ====================
+
+-- 1. Item ID Finder Döngüsü
+AppMaid:GiveTask(task.spawn(function()
+    local lastNotifiedItem = nil
+    while true do
+        task.wait(0.5)
+        if State.ItemIDFinderActive then
+            local char = LocalPlayer.Character
+            if char then
+                local foundItem = nil
+                for _, child in ipairs(char:GetChildren()) do
+                    if child:IsA("Tool") then
+                        foundItem = child
+                        break
+                    end
+                end
+                
+                if foundItem then
+                    if foundItem ~= lastNotifiedItem then
+                        lastNotifiedItem = foundItem
+                        local infoText = "Ad: " .. foundItem.Name
+                        if foundItem.TextureId ~= "" then
+                            infoText = infoText .. "\nTexture: " .. foundItem.TextureId
+                        end
+                        pcall(function()
+                            StarterGui:SetCore("SendNotification", { Title = "ItemIDFinder", Text = infoText, Duration = 6 })
+                        end)
+                    end
+                else
+                    lastNotifiedItem = nil
+                end
+            end
+        else
+            lastNotifiedItem = nil
+        end
+    end
+end))
+
+-- 2. Auto Fuse Döngüsü
+AppMaid:GiveTask(task.spawn(function()
+    while true do
+        if State.AutoFuseActive then
+            local id = tonumber(State.FuseId)
+            local amt = tonumber(State.FuseAmount)
+            if id and amt then
+                Remotes.SafeFuse(id, amt)
+            end
+        end
+        local customDelay = tonumber(State.FuseDelay) or 0.5
+        customDelay = math.clamp(customDelay, 0.1, 5)
+        task.wait(customDelay)
+    end
+end))
+
+-- 3. Auto Buy Döngüsü
+AppMaid:GiveTask(task.spawn(function()
+    while true do
+        if State.AutoBuyActive then
+            local id = tonumber(State.BuyId)
+            if id then
+                Remotes.SafeBuy(id)
+            end
+        end
+        local customDelay = tonumber(State.BuyDelay) or 0.5
+        customDelay = math.clamp(customDelay, 0.1, 5)
+        task.wait(customDelay)
+    end
+end))
+
+-- 4. Fizik Sıkıştırma Döngüsü
+AppMaid:GiveTask(RunService.Stepped:Connect(function()
+    if State.PhysicsGlitched then
+        pcall(function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                local hrp = char.HumanoidRootPart
+                for _, part in ipairs(Workspace:GetPartBoundsInRadius(hrp.Position, 4)) do
+                    if part and not part:IsDescendantOf(char) and not part.Anchored then
+                        part.Velocity = Vector3.new(0, -500, 0)
+                        part.RotVelocity = Vector3.new(100, 100, 100)
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+end))
+
+-- ==================== 9. CONTROLS & CLEANUP (KONTROL & KAPATMA) ====================
+
+local isMinimized = false
+MinimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    ContentContainer.Visible = not isMinimized
+    MainFrame.Size = isMinimized and UDim2.new(0, 320, 0, 42) or UDim2.new(0, 320, 0, 480)
+    MinimizeButton.Text = isMinimized and "+" or "-"
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    AppMaid:DoCleaning() -- Tüm döngüleri ve bağlantıları durdur, GUI'yi yok et
+end)
+
+print("[Master Hub v3.0]: Modüler ve Güvenli Sistem Başarıyla Yüklendi!")
