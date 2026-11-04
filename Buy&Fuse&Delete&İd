@@ -1,5 +1,5 @@
 --[[
-    Project: Roblox Universal Automation - All-in-One Neon Panel
+    Project: Roblox Universal Automation - All-in-One Neon Panel (v2.0)
     Author: Created By Gemini & Saint1453
     Executor: Delta (Mobile/PC)
 --]]
@@ -10,7 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local StarterGui = game:GetService("StarterGui")
 
 -- Eski GUI kalıntılarını temizle
 if getgenv().MasterHubUI then
@@ -42,11 +42,11 @@ end
 
 getgenv().MasterHubUI = ScreenGui
 
--- Ana Çerçeve (Neon Hatlı)
+-- Ana Çerçeve (Neon Hatlı) - Boyut büyütüldü
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 320, 0, 390)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -195)
+MainFrame.Size = UDim2.new(0, 320, 0, 470)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -235)
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -97,9 +97,7 @@ CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseButton.TextSize = 13
 CloseButton.Font = Enum.Font.GothamBold
 CloseButton.Parent = TopBar
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 6)
-CloseCorner.Parent = CloseButton
+Instance.new("UICorner", CloseButton).CornerRadius = UDim.new(0, 6)
 
 -- Küçültme Tuşu (-)
 local MinimizeButton = Instance.new("TextButton")
@@ -111,21 +109,19 @@ MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinimizeButton.TextSize = 15
 MinimizeButton.Font = Enum.Font.GothamBold
 MinimizeButton.Parent = TopBar
-local MinCorner = Instance.new("UICorner")
-MinCorner.CornerRadius = UDim.new(0, 6)
-MinCorner.Parent = MinimizeButton
+Instance.new("UICorner", MinimizeButton).CornerRadius = UDim.new(0, 6)
 
--- İçerik Ana Alanı
+-- İçerik Ana Alanı (ScrollingFrame - Canvas boyutu artırıldı)
 local ContentContainer = Instance.new("ScrollingFrame")
 ContentContainer.Size = UDim2.new(1, 0, 1, -42)
 ContentContainer.Position = UDim2.new(0, 0, 0, 42)
 ContentContainer.BackgroundTransparency = 1
-ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 450)
+ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 560)
 ContentContainer.ScrollBarThickness = 4
 ContentContainer.Parent = MainFrame
 
 -- Fonksiyonel Bölüm Oluşturucu Yardımcısı
-apex = function(name, yPos, height)
+local function apex(name, yPos, height)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, -20, 0, height)
     frame.Position = UDim2.new(0, 10, 0, yPos)
@@ -145,8 +141,56 @@ apex = function(name, yPos, height)
     return frame
 end
 
--- ==================== BÖLÜM 1: AUTO FUSE ====================
-local FuseBox = apex("AutoFuse", 10, 120)
+-- ==================== BÖLÜM 1: ITEM ID FINDER ====================
+local FinderBox = apex("ItemIDFinder", 10, 100)
+
+local FinderTitle = Instance.new("TextLabel")
+FinderTitle.Size = UDim2.new(1, -15, 0, 25)
+FinderTitle.Position = UDim2.new(0, 10, 0, 5)
+FinderTitle.BackgroundTransparency = 1
+FinderTitle.Text = "🔍 Item ID Finder & Info"
+FinderTitle.TextColor3 = Color3.fromRGB(0, 229, 255)
+FinderTitle.TextSize = 13
+FinderTitle.Font = Enum.Font.GothamBold
+FinderTitle.TextXAlignment = Enum.TextXAlignment.Left
+FinderTitle.Parent = FinderBox
+
+local FinderStatus = Instance.new("TextLabel")
+FinderStatus.Size = UDim2.new(1, -20, 0, 25)
+FinderStatus.Position = UDim2.new(0, 10, 0, 30)
+FinderStatus.BackgroundTransparency = 1
+FinderStatus.Text = "Elindeki eşyanın ID/Texture bilgilerini gösterir."
+FinderStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
+FinderStatus.TextSize = 11
+FinderStatus.Font = Enum.Font.Gotham
+FinderStatus.TextXAlignment = Enum.TextXAlignment.Left
+FinderStatus.Parent = FinderBox
+
+local FinderTglBtn = Instance.new("TextButton")
+FinderTglBtn.Size = UDim2.new(1, -20, 0, 32)
+FinderTglBtn.Position = UDim2.new(0, 10, 0, 58)
+FinderTglBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+FinderTglBtn.Text = "ID FINDER: KAPALI"
+FinderTglBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FinderTglBtn.TextSize = 12
+FinderTglBtn.Font = Enum.Font.GothamBold
+FinderTglBtn.Parent = FinderBox
+Instance.new("UICorner", FinderTglBtn).CornerRadius = UDim.new(0, 6)
+
+getgenv().ItemIDFinderActive = false
+FinderTglBtn.MouseButton1Click:Connect(function()
+    getgenv().ItemIDFinderActive = not getgenv().ItemIDFinderActive
+    if getgenv().ItemIDFinderActive then
+        FinderTglBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+        FinderTglBtn.Text = "ID FINDER: AÇIK"
+    else
+        FinderTglBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+        FinderTglBtn.Text = "ID FINDER: KAPALI"
+    end
+end)
+
+-- ==================== BÖLÜM 2: AUTO FUSE ====================
+local FuseBox = apex("AutoFuse", 120, 150)
 
 local FTitle = Instance.new("TextLabel")
 FTitle.Size = UDim2.new(1, -15, 0, 25)
@@ -183,9 +227,22 @@ FAmountBox.Font = Enum.Font.Gotham
 FAmountBox.Parent = FuseBox
 Instance.new("UICorner", FAmountBox).CornerRadius = UDim.new(0, 6)
 
+-- Süre (Delay) Kutusu
+local FDelayBox = Instance.new("TextBox")
+FDelayBox.Size = UDim2.new(1, -20, 0, 26)
+FDelayBox.Position = UDim2.new(0, 10, 0, 72)
+FDelayBox.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+FDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+FDelayBox.PlaceholderText = "Süre (0.1 - 5 saniye)"
+FDelayBox.Text = "0.5"
+FDelayBox.TextSize = 11
+FDelayBox.Font = Enum.Font.Gotham
+FDelayBox.Parent = FuseBox
+Instance.new("UICorner", FDelayBox).CornerRadius = UDim.new(0, 6)
+
 local FTglBtn = Instance.new("TextButton")
-FTglBtn.Size = UDim2.new(1, -20, 0, 35)
-FTglBtn.Position = UDim2.new(0, 10, 0, 75)
+FTglBtn.Size = UDim2.new(1, -20, 0, 32)
+FTglBtn.Position = UDim2.new(0, 10, 0, 105)
 FTglBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 FTglBtn.Text = "AUTO FUSE: KAPALI"
 FTglBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -206,8 +263,8 @@ FTglBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ==================== BÖLÜM 2: CAR DELETE / PHYSICS CLIP ====================
-local CarBox = apex("CarDelete", 140, 100)
+-- ==================== BÖLÜM 3: CAR DELETE / PHYSICS CLIP ====================
+local CarBox = apex("CarDelete", 280, 100)
 
 local CTitle = Instance.new("TextLabel")
 CTitle.Size = UDim2.new(1, -15, 0, 25)
@@ -222,7 +279,7 @@ CTitle.Parent = CarBox
 
 local CStatus = Instance.new("TextLabel")
 CStatus.Size = UDim2.new(1, -20, 0, 25)
-CStatus.Position = UDim2.new(0, 10, 0, 32)
+CStatus.Position = UDim2.new(0, 10, 0, 30)
 CStatus.BackgroundTransparency = 1
 CStatus.Text = "Durum: Devre Dışı"
 CStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -233,7 +290,7 @@ CStatus.Parent = CarBox
 
 local CTglBtn = Instance.new("TextButton")
 CTglBtn.Size = UDim2.new(1, -20, 0, 32)
-CTglBtn.Position = UDim2.new(0, 10, 0, 60)
+CTglBtn.Position = UDim2.new(0, 10, 0, 58)
 CTglBtn.BackgroundColor3 = Color3.fromRGB(180, 100, 0)
 CTglBtn.Text = "FİZİK MODU (AÇ / KAPA)"
 CTglBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -247,15 +304,15 @@ CTglBtn.MouseButton1Click:Connect(function()
     _G.PhysicsGlitched = not _G.PhysicsGlitched
     if _G.PhysicsGlitched then
         CTglBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
-        CStatus.Text = "Durum: Aktif (Çevredeki Nesneler İtiliyor)"
+        CStatus.Text = "Durum: Aktif (Nesneler İtiliyor)"
     else
         CTglBtn.BackgroundColor3 = Color3.fromRGB(180, 100, 0)
         CStatus.Text = "Durum: Devre Dışı"
     end
 end)
 
--- ==================== BÖLÜM 3: AUTO BUY ====================
-local BuyBox = apex("AutoBuy", 250, 110)
+-- ==================== BÖLÜM 4: AUTO BUY ====================
+local BuyBox = apex("AutoBuy", 390, 140)
 
 local BTitle = Instance.new("TextLabel")
 BTitle.Size = UDim2.new(1, -15, 0, 25)
@@ -280,9 +337,22 @@ BIdBox.Font = Enum.Font.Gotham
 BIdBox.Parent = BuyBox
 Instance.new("UICorner", BIdBox).CornerRadius = UDim.new(0, 6)
 
+-- Süre (Delay) Kutusu
+local BDelayBox = Instance.new("TextBox")
+BDelayBox.Size = UDim2.new(1, -20, 0, 26)
+BDelayBox.Position = UDim2.new(0, 10, 0, 70)
+BDelayBox.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+BDelayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+BDelayBox.PlaceholderText = "Süre (0.1 - 5 saniye)"
+BDelayBox.Text = "0.5"
+BDelayBox.TextSize = 11
+BDelayBox.Font = Enum.Font.Gotham
+BDelayBox.Parent = BuyBox
+Instance.new("UICorner", BDelayBox).CornerRadius = UDim.new(0, 6)
+
 local BTglBtn = Instance.new("TextButton")
 BTglBtn.Size = UDim2.new(1, -20, 0, 32)
-BTglBtn.Position = UDim2.new(0, 10, 0, 70)
+BTglBtn.Position = UDim2.new(0, 10, 0, 100)
 BTglBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
 BTglBtn.Text = "AUTO BUY: KAPALI"
 BTglBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -313,22 +383,78 @@ MinimizeButton.MouseButton1Click:Connect(function()
         MainFrame.Size = UDim2.new(0, 320, 0, 42)
         MinimizeButton.Text = "+"
     else
-        MainFrame.Size = UDim2.new(0, 320, 0, 390)
+        MainFrame.Size = UDim2.new(0, 320, 0, 470)
         MinimizeButton.Text = "-"
     end
 end)
 
 CloseButton.MouseButton1Click:Connect(function()
+    getgenv().ItemIDFinderActive = false
     getgenv().AutoFuseActive = false
     _G.PhysicsGlitched = false
     getgenv().AutoBuyActive = false
     ScreenGui:Destroy()
 end)
 
--- Arka Planda Çalışan İşlemler (Loop)
+-- 1. Item ID Finder Döngüsü (Panel Kontrollü)
+task.spawn(function()
+    local lastNotifiedItem = nil
+    while true do
+        task.wait(0.5)
+        if getgenv().ItemIDFinderActive then
+            local char = LocalPlayer.Character
+            if char then
+                local foundItem = nil
+                for _, child in ipairs(char:GetChildren()) do
+                    if child:IsA("Tool") then
+                        foundItem = child
+                        break
+                    end
+                end
+                
+                if foundItem then
+                    if foundItem ~= lastNotifiedItem then
+                        lastNotifiedItem = foundItem
+                        local infoText = "Ad: " .. foundItem.Name
+                        
+                        if foundItem.TextureId ~= "" then
+                            infoText = infoText .. "\nTexture: " .. foundItem.TextureId
+                        end
+                        
+                        local handle = foundItem:FindFirstChild("Handle")
+                        if handle then
+                            if handle:IsA("MeshPart") and handle.MeshId ~= "" then
+                                infoText = infoText .. "\nMeshId: " .. handle.MeshId
+                            else
+                                local mesh = handle:FindFirstChildOfClass("SpecialMesh")
+                                if mesh and mesh.MeshId ~= "" then
+                                    infoText = infoText .. "\nMeshId: " .. mesh.MeshId
+                                end
+                            end
+                        end
+                        
+                        pcall(function()
+                            StarterGui:SetCore("SendNotification", {
+                                Title = "ItemIDFinder",
+                                Text = infoText,
+                                Duration = 6,
+                            })
+                        end)
+                        print("[Delta ID Finder] " .. infoText)
+                    end
+                else
+                    lastNotifiedItem = nil
+                end
+            end
+        else
+            lastNotifiedItem = nil
+        end
+    end
+end)
+
+-- 2. Auto Fuse Döngüsü (Ayarlaç Süre Kontrollü)
 task.spawn(function()
     while true do
-        -- 1. Auto Fuse İşlemi
         if getgenv().AutoFuseActive and FuseRF then
             pcall(function()
                 local id = tonumber(FIdBox.Text)
@@ -339,7 +465,18 @@ task.spawn(function()
             end)
         end
         
-        -- 2. Auto Buy İşlemi
+        -- Süreyi clampleyip güvenli hale getirelim (0.1 ile 5 saniye arası)
+        local customDelay = tonumber(FDelayBox.Text)
+        if not customDelay or customDelay < 0.1 then customDelay = 0.1 end
+        if customDelay > 5 then customDelay = 5 end
+        
+        task.wait(customDelay)
+    end
+end)
+
+-- 3. Auto Buy Döngüsü (Ayarlaç Süre Kontrollü)
+task.spawn(function()
+    while true do
         if getgenv().AutoBuyActive and CoinMarketRE then
             pcall(function()
                 local id = tonumber(BIdBox.Text)
@@ -349,11 +486,15 @@ task.spawn(function()
             end)
         end
         
-        task.wait(0.2)
+        local customDelay = tonumber(BDelayBox.Text)
+        if not customDelay or customDelay < 0.1 then customDelay = 0.1 end
+        if customDelay > 5 then customDelay = 5 end
+        
+        task.wait(customDelay)
     end
 end)
 
--- 3. Fizik Sıkıştırma Döngüsü
+-- 4. Fizik Sıkıştırma Döngüsü
 task.spawn(function()
     while true do
         RunService.Stepped:Wait()
@@ -375,4 +516,4 @@ task.spawn(function()
     end
 end)
 
-print("[Master Hub]: Gemini & Saint1453 Efsane Panel Başarıyla Yüklendi!")
+print("[Master Hub v2.0]: Gemini & Saint1453 Paneli Başarıyla Yüklendi!")
