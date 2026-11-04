@@ -1,0 +1,261 @@
+--[[
+    Project: Roblox Universal Automation - Interactive GUI Auto-Fuse Module
+    Executor: Delta (Mobile/PC)
+    Author: Senior Reverse Engineering Specialist
+--]]
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
+
+local Functions = ReplicatedStorage:WaitForChild("Functions", 5)
+local FuseRF = Functions and Functions:WaitForChild("Fuse", 5):WaitForChild("FuseRF", 5)
+
+if not FuseRF then
+    warn("[Auto-Fuse]: Kritik Hata - FuseRF bulunamadı!")
+    return
+end
+
+-- Eski GUI açıksa çakışmayı önlemek için kapat
+if getgenv().AutoFuseUI then
+    pcall(function() getgenv().AutoFuseUI:Destroy() end)
+end
+
+-- Ana Ekran Katmanı
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AutoFuseUI"
+ScreenGui.ResetOnSpawn = false
+
+-- Delta ve diğer executor'lar için güvenli parent ataması
+if syn and syn.protect_gui then
+    syn.protect_gui(ScreenGui)
+    ScreenGui.Parent = CoreGui
+elseif gethui then
+    ScreenGui.Parent = gethui()
+else
+    ScreenGui.Parent = CoreGui
+end
+
+getgenv().AutoFuseUI = ScreenGui
+
+-- Çizimine Uygun Ana Çerçeve (Panel)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 280, 0, 220)
+MainFrame.Position = UDim2.new(0.5, -140, 0.5, -110)
+MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true -- Telefonda ve PC'de parmakla/fareyle sürüklenebilir
+MainFrame.Parent = ScreenGui
+
+-- Köşe Yuvarlama
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = MainFrame
+
+-- Üst Başlık Çubuğu
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(1, 0, 0, 35)
+TopBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local TopBarCorner = Instance.new("UICorner")
+TopBarCorner.CornerRadius = UDim.new(0, 8)
+TopBarCorner.Parent = TopBar
+
+-- Başlık Yazısı
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -70, 1, 0)
+TitleLabel.Position = UDim2.new(0, 10, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Auto-Fuse Kontrol Paneli"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 14
+TitleLabel.Font = Enum.Font.SourceSansBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = TopBar
+
+-- Çizimindeki X (Kapatma Tuşu)
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -32, 0, 2)
+CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 14
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.Parent = TopBar
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseButton
+
+-- Çizimindeki - (Küçültme / Açılır-Kapanır Tuş)
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+MinimizeButton.Position = UDim2.new(1, -66, 0, 2)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+MinimizeButton.Text = "-"
+MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.TextSize = 16
+MinimizeButton.Font = Enum.Font.SourceSansBold
+MinimizeButton.Parent = TopBar
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 6)
+MinCorner.Parent = MinimizeButton
+
+-- İçerik Alanı
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Size = UDim2.new(1, 0, 1, -35)
+ContentFrame.Position = UDim2.new(0, 0, 0, 35)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
+
+-- ID Giriş Kutusu (El ile yazılabilsin diye)
+local IdLabel = Instance.new("TextLabel")
+IdLabel.Size = UDim2.new(0, 80, 0, 30)
+IdLabel.Position = UDim2.new(0, 15, 0, 15)
+IdLabel.BackgroundTransparency = 1
+IdLabel.Text = "Item ID:"
+IdLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+IdLabel.TextSize = 14
+IdLabel.Font = Enum.Font.SourceSansBold
+IdLabel.TextXAlignment = Enum.TextXAlignment.Left
+IdLabel.Parent = ContentFrame
+
+local IdBox = Instance.new("TextBox")
+IdBox.Size = UDim2.new(0, 150, 0, 30)
+IdBox.Position = UDim2.new(0, 105, 0, 15)
+IdBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+IdBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+IdBox.Text = "10001"
+IdBox.TextSize = 14
+IdBox.Font = Enum.Font.SourceSans
+IdBox.ClearTextOnFocus = false
+IdBox.Parent = ContentFrame
+local IdCorner = Instance.new("UICorner")
+IdCorner.CornerRadius = UDim.new(0, 6)
+IdCorner.Parent = IdBox
+
+-- Miktar Giriş Kutusu (3, 12 veya istediğin sayı yapılabilir)
+local AmountLabel = Instance.new("TextLabel")
+AmountLabel.Size = UDim2.new(0, 80, 0, 30)
+AmountLabel.Position = UDim2.new(0, 15, 0, 60)
+AmountLabel.BackgroundTransparency = 1
+AmountLabel.Text = "Miktar:"
+AmountLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+AmountLabel.TextSize = 14
+AmountLabel.Font = Enum.Font.SourceSansBold
+AmountLabel.TextXAlignment = Enum.TextXAlignment.Left
+AmountLabel.Parent = ContentFrame
+
+local AmountBox = Instance.new("TextBox")
+AmountBox.Size = UDim2.new(0, 150, 0, 30)
+AmountBox.Position = UDim2.new(0, 105, 0, 60)
+AmountBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+AmountBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+AmountBox.Text = "3"
+AmountBox.TextSize = 14
+AmountBox.Font = Enum.Font.SourceSans
+AmountBox.ClearTextOnFocus = false
+AmountBox.Parent = ContentFrame
+local AmtCorner = Instance.new("UICorner")
+AmtCorner.CornerRadius = UDim.new(0, 6)
+AmtCorner.Parent = AmountBox
+
+-- Başlat / Durdur Butonu (Açılır-Kapanır Mantık)
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0, 240, 0, 40)
+ToggleButton.Position = UDim2.new(0, 20, 0, 110)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Başlangıçta Kapalı (Kırmızı)
+ToggleButton.Text = "Durum: KAPALI"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextSize = 16
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.Parent = ContentFrame
+local TglCorner = Instance.new("UICorner")
+TglCorner.CornerRadius = UDim.new(0, 6)
+TglCorner.Parent = ToggleButton
+
+-- Sunucu Durum Bilgi Yazısı
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(0, 240, 0, 20)
+StatusLabel.Position = UDim2.new(0, 20, 0, 160)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Hazır - Değerleri girip başlatın."
+StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+StatusLabel.TextSize = 12
+StatusLabel.Font = Enum.Font.SourceSansItalic
+StatusLabel.Parent = ContentFrame
+
+-- Global Kontrol Yapılandırması
+getgenv().AutoFuseConfig = {
+    Running = false,
+    CheckInterval = 2,
+}
+
+-- Buton Etkileşimleri (Minimize ve Kapatma)
+local isMinimized = false
+MinimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    ContentFrame.Visible = not isMinimized
+    if isMinimized then
+        MainFrame.Size = UDim2.new(0, 280, 0, 35)
+        MinimizeButton.Text = "+"
+    else
+        MainFrame.Size = UDim2.new(0, 280, 0, 220)
+        MinimizeButton.Text = "-"
+    end
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+    getgenv().AutoFuseConfig.Running = false
+end)
+
+-- Başlat/Durdur Buton Mantığı
+ToggleButton.MouseButton1Click:Connect(function()
+    getgenv().AutoFuseConfig.Running = not getgenv().AutoFuseConfig.Running
+    if getgenv().AutoFuseConfig.Running then
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50) -- Yeşil (Aktif)
+        ToggleButton.Text = "Durum: AKTİF"
+    else
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Kırmızı (Kapalı)
+        ToggleButton.Text = "Durum: KAPALI"
+    end
+end)
+
+-- Arka Planda Sürekli Çalışan Döngü (Kutulardaki anlık değerleri okur)
+task.spawn(function()
+    while true do
+        if getgenv().AutoFuseConfig.Running and ScreenGui.Parent then
+            pcall(function()
+                -- Yazılan ID ve Miktar değerlerini sayıya çevir
+                local itemId = tonumber(IdBox.Text)
+                local amount = tonumber(AmountBox.Text)
+                
+                if itemId and amount then
+                    local exactPayload = {
+                        [itemId] = amount 
+                    }
+                    
+                    local response = FuseRF:InvokeServer(exactPayload)
+                    if response then
+                        StatusLabel.Text = "Başarılı Yanıt Alındı."
+                    else
+                        StatusLabel.Text = "İstek Gönderildi..."
+                    end
+                else
+                    StatusLabel.Text = "Hata: Geçersiz ID veya Miktar!"
+                end
+            end)
+        end
+        task.wait(getgenv().AutoFuseConfig.CheckInterval)
+    end
+end)
+
+print("[Auto-Fuse GUI]: Arayüz başarıyla yüklendi!")
