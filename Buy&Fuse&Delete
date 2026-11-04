@@ -1,0 +1,378 @@
+--[[
+    Project: Roblox Universal Automation - All-in-One Neon Panel
+    Author: Created By Gemini & Saint1453
+    Executor: Delta (Mobile/PC)
+--]]
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Eski GUI kalıntılarını temizle
+if getgenv().MasterHubUI then
+    pcall(function() getgenv().MasterHubUI:Destroy() end)
+end
+
+-- Remote / Fonksiyon Bağlantıları
+local Functions = ReplicatedStorage:WaitForChild("Functions", 5)
+local FuseRF = Functions and Functions:WaitForChild("Fuse", 5):WaitForChild("FuseRF", 5)
+
+local CoinMarketRE
+pcall(function()
+    CoinMarketRE = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Coin"):WaitForChild("CoinMarketRE")
+end)
+
+-- Ana Ekran Katmanı
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MasterHubUI"
+ScreenGui.ResetOnSpawn = false
+
+if syn and syn.protect_gui then
+    syn.protect_gui(ScreenGui)
+    ScreenGui.Parent = CoreGui
+elseif gethui then
+    ScreenGui.Parent = gethui()
+else
+    ScreenGui.Parent = CoreGui
+end
+
+getgenv().MasterHubUI = ScreenGui
+
+-- Ana Çerçeve (Neon Hatlı)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 320, 0, 390)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -195)
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = MainFrame
+
+-- Neon Kenar Efekti (Stroke)
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(0, 229, 255)
+UIStroke.Thickness = 2
+UIStroke.Parent = MainFrame
+
+-- Üst Başlık Çubuğu
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(1, 0, 0, 42)
+TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local TopCorner = Instance.new("UICorner")
+TopCorner.CornerRadius = UDim.new(0, 10)
+TopCorner.Parent = TopBar
+
+-- Başlık Yazısı
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -75, 1, 0)
+TitleLabel.Position = UDim2.new(0, 12, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Created By Gemini & Saint1453"
+TitleLabel.TextColor3 = Color3.fromRGB(0, 229, 255)
+TitleLabel.TextSize = 12
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = TopBar
+
+-- Kapatma Tuşu (X)
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 28, 0, 28)
+CloseButton.Position = UDim2.new(1, -32, 0, 7)
+CloseButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 13
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.Parent = TopBar
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseButton
+
+-- Küçültme Tuşu (-)
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Size = UDim2.new(0, 28, 0, 28)
+MinimizeButton.Position = UDim2.new(1, -64, 0, 7)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+MinimizeButton.Text = "-"
+MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.TextSize = 15
+MinimizeButton.Font = Enum.Font.GothamBold
+MinimizeButton.Parent = TopBar
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 6)
+MinCorner.Parent = MinimizeButton
+
+-- İçerik Ana Alanı
+local ContentContainer = Instance.new("ScrollingFrame")
+ContentContainer.Size = UDim2.new(1, 0, 1, -42)
+ContentContainer.Position = UDim2.new(0, 0, 0, 42)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 450)
+ContentContainer.ScrollBarThickness = 4
+ContentContainer.Parent = MainFrame
+
+-- Fonksiyonel Bölüm Oluşturucu Yardımcısı
+apex = function(name, yPos, height)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -20, 0, height)
+    frame.Position = UDim2.new(0, 10, 0, yPos)
+    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    frame.BorderSizePixel = 0
+    frame.Parent = ContentContainer
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(45, 45, 65)
+    stroke.Thickness = 1
+    stroke.Parent = frame
+    
+    return frame
+end
+
+-- ==================== BÖLÜM 1: AUTO FUSE ====================
+local FuseBox = apex("AutoFuse", 10, 120)
+
+local FTitle = Instance.new("TextLabel")
+FTitle.Size = UDim2.new(1, -15, 0, 25)
+FTitle.Position = UDim2.new(0, 10, 0, 5)
+FTitle.BackgroundTransparency = 1
+FTitle.Text = "🔥 Auto Fuse Kontrolü"
+FTitle.TextColor3 = Color3.fromRGB(255, 170, 0)
+FTitle.TextSize = 13
+FTitle.Font = Enum.Font.GothamBold
+FTitle.TextXAlignment = Enum.TextXAlignment.Left
+FTitle.Parent = FuseBox
+
+local FIdBox = Instance.new("TextBox")
+FIdBox.Size = UDim2.new(0, 130, 0, 30)
+FIdBox.Position = UDim2.new(0, 10, 0, 35)
+FIdBox.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+FIdBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+FIdBox.PlaceholderText = "Item ID"
+FIdBox.Text = "10001"
+FIdBox.TextSize = 12
+FIdBox.Font = Enum.Font.Gotham
+FIdBox.Parent = FuseBox
+Instance.new("UICorner", FIdBox).CornerRadius = UDim.new(0, 6)
+
+local FAmountBox = Instance.new("TextBox")
+FAmountBox.Size = UDim2.new(0, 110, 0, 30)
+FAmountBox.Position = UDim2.new(0, 150, 0, 35)
+FAmountBox.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+FAmountBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+FAmountBox.PlaceholderText = "Miktar"
+FAmountBox.Text = "3"
+FAmountBox.TextSize = 12
+FAmountBox.Font = Enum.Font.Gotham
+FAmountBox.Parent = FuseBox
+Instance.new("UICorner", FAmountBox).CornerRadius = UDim.new(0, 6)
+
+local FTglBtn = Instance.new("TextButton")
+FTglBtn.Size = UDim2.new(1, -20, 0, 35)
+FTglBtn.Position = UDim2.new(0, 10, 0, 75)
+FTglBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+FTglBtn.Text = "AUTO FUSE: KAPALI"
+FTglBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FTglBtn.TextSize = 12
+FTglBtn.Font = Enum.Font.GothamBold
+FTglBtn.Parent = FuseBox
+Instance.new("UICorner", FTglBtn).CornerRadius = UDim.new(0, 6)
+
+getgenv().AutoFuseActive = false
+FTglBtn.MouseButton1Click:Connect(function()
+    getgenv().AutoFuseActive = not getgenv().AutoFuseActive
+    if getgenv().AutoFuseActive then
+        FTglBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+        FTglBtn.Text = "AUTO FUSE: AÇIK"
+    else
+        FTglBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+        FTglBtn.Text = "AUTO FUSE: KAPALI"
+    end
+end)
+
+-- ==================== BÖLÜM 2: CAR DELETE / PHYSICS CLIP ====================
+local CarBox = apex("CarDelete", 140, 100)
+
+local CTitle = Instance.new("TextLabel")
+CTitle.Size = UDim2.new(1, -15, 0, 25)
+CTitle.Position = UDim2.new(0, 10, 0, 5)
+CTitle.BackgroundTransparency = 1
+CTitle.Text = "🚗 Fizik Sıkıştırma / Car Delete"
+CTitle.TextColor3 = Color3.fromRGB(0, 229, 255)
+CTitle.TextSize = 13
+CTitle.Font = Enum.Font.GothamBold
+CTitle.TextXAlignment = Enum.TextXAlignment.Left
+CTitle.Parent = CarBox
+
+local CStatus = Instance.new("TextLabel")
+CStatus.Size = UDim2.new(1, -20, 0, 25)
+CStatus.Position = UDim2.new(0, 10, 0, 32)
+CStatus.BackgroundTransparency = 1
+CStatus.Text = "Durum: Devre Dışı"
+CStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
+CStatus.TextSize = 11
+CStatus.Font = Enum.Font.Code
+CStatus.TextXAlignment = Enum.TextXAlignment.Left
+CStatus.Parent = CarBox
+
+local CTglBtn = Instance.new("TextButton")
+CTglBtn.Size = UDim2.new(1, -20, 0, 32)
+CTglBtn.Position = UDim2.new(0, 10, 0, 60)
+CTglBtn.BackgroundColor3 = Color3.fromRGB(180, 100, 0)
+CTglBtn.Text = "FİZİK MODU (AÇ / KAPA)"
+CTglBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CTglBtn.TextSize = 12
+CTglBtn.Font = Enum.Font.GothamBold
+CTglBtn.Parent = CarBox
+Instance.new("UICorner", CTglBtn).CornerRadius = UDim.new(0, 6)
+
+_G.PhysicsGlitched = false
+CTglBtn.MouseButton1Click:Connect(function()
+    _G.PhysicsGlitched = not _G.PhysicsGlitched
+    if _G.PhysicsGlitched then
+        CTglBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+        CStatus.Text = "Durum: Aktif (Çevredeki Nesneler İtiliyor)"
+    else
+        CTglBtn.BackgroundColor3 = Color3.fromRGB(180, 100, 0)
+        CStatus.Text = "Durum: Devre Dışı"
+    end
+end)
+
+-- ==================== BÖLÜM 3: AUTO BUY ====================
+local BuyBox = apex("AutoBuy", 250, 110)
+
+local BTitle = Instance.new("TextLabel")
+BTitle.Size = UDim2.new(1, -15, 0, 25)
+BTitle.Position = UDim2.new(0, 10, 0, 5)
+BTitle.BackgroundTransparency = 1
+BTitle.Text = "🛒 Auto Buy Pazarı"
+BTitle.TextColor3 = Color3.fromRGB(170, 0, 255)
+BTitle.TextSize = 13
+BTitle.Font = Enum.Font.GothamBold
+BTitle.TextXAlignment = Enum.TextXAlignment.Left
+BTitle.Parent = BuyBox
+
+local BIdBox = Instance.new("TextBox")
+BIdBox.Size = UDim2.new(1, -20, 0, 30)
+BIdBox.Position = UDim2.new(0, 10, 0, 35)
+BIdBox.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+BIdBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+BIdBox.PlaceholderText = "Satın Alınacak Item ID"
+BIdBox.Text = "10001"
+BIdBox.TextSize = 12
+BIdBox.Font = Enum.Font.Gotham
+BIdBox.Parent = BuyBox
+Instance.new("UICorner", BIdBox).CornerRadius = UDim.new(0, 6)
+
+local BTglBtn = Instance.new("TextButton")
+BTglBtn.Size = UDim2.new(1, -20, 0, 32)
+BTglBtn.Position = UDim2.new(0, 10, 0, 70)
+BTglBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+BTglBtn.Text = "AUTO BUY: KAPALI"
+BTglBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+BTglBtn.TextSize = 12
+BTglBtn.Font = Enum.Font.GothamBold
+BTglBtn.Parent = BuyBox
+Instance.new("UICorner", BTglBtn).CornerRadius = UDim.new(0, 6)
+
+getgenv().AutoBuyActive = false
+BTglBtn.MouseButton1Click:Connect(function()
+    getgenv().AutoBuyActive = not getgenv().AutoBuyActive
+    if getgenv().AutoBuyActive then
+        BTglBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+        BTglBtn.Text = "AUTO BUY: AÇIK"
+    else
+        BTglBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+        BTglBtn.Text = "AUTO BUY: KAPALI"
+    end
+end)
+
+-- ==================== AÇMA / KAPAMA VE KONTROL MANTIĞI ====================
+
+local isMinimized = false
+MinimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    ContentContainer.Visible = not isMinimized
+    if isMinimized then
+        MainFrame.Size = UDim2.new(0, 320, 0, 42)
+        MinimizeButton.Text = "+"
+    else
+        MainFrame.Size = UDim2.new(0, 320, 0, 390)
+        MinimizeButton.Text = "-"
+    end
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    getgenv().AutoFuseActive = false
+    _G.PhysicsGlitched = false
+    getgenv().AutoBuyActive = false
+    ScreenGui:Destroy()
+end)
+
+-- Arka Planda Çalışan İşlemler (Loop)
+task.spawn(function()
+    while true do
+        -- 1. Auto Fuse İşlemi
+        if getgenv().AutoFuseActive and FuseRF then
+            pcall(function()
+                local id = tonumber(FIdBox.Text)
+                local amt = tonumber(FAmountBox.Text)
+                if id and amt then
+                    FuseRF:InvokeServer({[id] = amt})
+                end
+            end)
+        end
+        
+        -- 2. Auto Buy İşlemi
+        if getgenv().AutoBuyActive and CoinMarketRE then
+            pcall(function()
+                local id = tonumber(BIdBox.Text)
+                if id then
+                    CoinMarketRE:FireServer("purchase", id, 1)
+                end
+            end)
+        end
+        
+        task.wait(0.2)
+    end
+end)
+
+-- 3. Fizik Sıkıştırma Döngüsü
+task.spawn(function()
+    while true do
+        RunService.Stepped:Wait()
+        if _G.PhysicsGlitched then
+            pcall(function()
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    local hrp = char.HumanoidRootPart
+                    for _, part in ipairs(Workspace:GetPartBoundsInRadius(hrp.Position, 4)) do
+                        if part and not part:IsDescendantOf(char) and not part.Anchored then
+                            part.Velocity = Vector3.new(0, -500, 0)
+                            part.RotVelocity = Vector3.new(100, 100, 100)
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+print("[Master Hub]: Gemini & Saint1453 Efsane Panel Başarıyla Yüklendi!")
